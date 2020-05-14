@@ -140,27 +140,25 @@ class ESPCN:
         batch_size, row_size, col_size, channel_size = sub_tensor.get_shape().as_list()
         temp = tf.reshape(sub_tensor, (1, row_size, col_size, ratio, ratio))
         """
-         按第二维度（高度）分割张量,得到row_size个子张量
-         子张量shape = [1, 1, col_size, ratio, ratio]     
+        按第二维度（高度）分割张量,得到row_size个子张量
+        子张量shape = [1, 1, col_size, ratio, ratio]     
         """
         temp_sub_tensors = tf.split(temp, row_size, 1)
         """
-         squeeze函数删除大小是1的维度，shape = [col_size, ratio, ratio]
-         row_size个张量在第二维度拼接张量
-         shape = [col_size, row_size * ratio, ratio]
+        row_size个张量在第四维度拼接张量
+        shape = [1, 1, col_size, row_size * ratio, ratio]
         """
-        temp = tf.concat([tf.squeeze(t) for t in temp_sub_tensors], 1)
+        temp = tf.concat([t for t in temp_sub_tensors], 3)
         """
-         按第一维度（宽度）分割张量,得到col_size个子张量
-         子张量shape = [1, row_size * ratio, ratio]     
+        按第三维度（宽度）分割张量,得到col_size个子张量
+        子张量shape = [1, 1, 1, row_size * ratio, ratio]     
         """
-        temp_sub_tensors = tf.split(temp, col_size, 0)
+        temp_sub_tensors = tf.split(temp, col_size, 2)
+        """ 
+        col_size个张量在第五维度拼接张量
+        shape =  [1, 1, 1, row_size * ratio, ratio * col_size]   
         """
-         squeeze后shape = [row_size * ratio, ratio]   
-         col_size个张量在第二维度拼接张量
-         shape = [row_size * ratio, ratio * col_size]
-        """
-        temp = tf.concat([tf.squeeze(t) for t in temp_sub_tensors], 1)
+        temp = tf.concat([t for t in temp_sub_tensors], 4)
         return tf.reshape(temp, (1, row_size * ratio, col_size * ratio, 1))
 
 
@@ -178,21 +176,19 @@ class ESPCN:
         temp_sub_tensors = tf.split(temp, row_size, 1)
         """
          [batch_size, 1, col_size, ratio, ratio]
-         => [batch_size, col_size, ratio, ratio]
-         => [bsize, col_size, row_size * ratio, ratio]
+         => [bsize, 1, col_size, row_size * ratio, ratio]
         """
-        temp = tf.concat([tf.squeeze(t) for t in temp_sub_tensors], 2)
+        temp = tf.concat([t for t in temp_sub_tensors], 3)
         """
-         [bsize, col_size, row_size * ratio, ratio]
-         => [bsize, 1, row_size * ratio, ratio]
+         [bsize, 1, col_size, row_size * ratio, ratio]
+         => [bsize, 1, 1, row_size * ratio, ratio]
         """
-        temp_sub_tensors = tf.split(temp, col_size, 1)
+        temp_sub_tensors = tf.split(temp, col_size, 2)
         """
-        [bsize, 1, row_size * ratio, ratio]
-         => [bsize, row_size * ratio, ratio]
-         => [bsize, row_size * ratio, col_size * ratio]
+        [bsize, 1, 1, row_size * ratio, ratio]
+         => [bsize, 1, 1, row_size * ratio, col_size * ratio]
         """
-        temp = tf.concat([tf.squeeze(t) for t in temp_sub_tensors], 2)
+        temp = tf.concat([t for t in temp_sub_tensors], 4)
         return tf.reshape(temp, (self.batch_size, row_size * ratio, col_size * ratio, 1))
 
 
